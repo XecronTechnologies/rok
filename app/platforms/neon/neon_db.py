@@ -5,7 +5,6 @@ from dotenv import load_dotenv, find_dotenv
 from typing import Optional
 from urllib.parse import urlparse, parse_qsl
 from app.utils.time_handler import unix_time_handler
-from app.platforms.neon.permission_master import fn_check_permission
 
 load_dotenv(find_dotenv())
 DATABASE_URL = "postgresql://neondb_owner:npg_cd4xtiJEswK6@ep-late-dawn-a1otplkv-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
