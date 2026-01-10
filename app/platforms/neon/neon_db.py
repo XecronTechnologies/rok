@@ -27,7 +27,7 @@ async def fn_neon_db(input_map:Optional[dict]):
             else:
                 return await fn_add_record(pool, input_map)
         except Exception as e:
-            return {"message1":str(e)}
+            return {"message":str(e)}
 
     elif(input_map.get("action_type")=="update_record"):
         try:

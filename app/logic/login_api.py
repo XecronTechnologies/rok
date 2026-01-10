@@ -72,6 +72,8 @@ async def fn_send_otp(message):
         message["parameters"]["filter_query"] = f"email = '{message.get('cl_id').get('email')}'"
         
         get_the_user = await fn_filter_record(pool,message)
+        print(f"User check result for {message.get('cl_id').get('email')} in schema {org_name}: {get_the_user}")
+        
         # Send OTP
         if get_the_user and get_the_user[0].get('user_id'):
             random_6_digit_otp = str(random.randint(100000, 999999))
@@ -99,7 +101,7 @@ async def fn_send_otp(message):
                 if update_result.get("status") == "success":
                     telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"hey {user_name}\nYour OTP is {random_6_digit_otp}")
                 else:
-                    telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="Failed to send OTP")
+                    telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"Failed to update OTP for {user_name}")
             else:
                 # Add new record with hashed OTP
                 hashed_otp = bcrypt.hashpw(random_6_digit_otp.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -117,11 +119,12 @@ async def fn_send_otp(message):
                 if add_the_record.get("status") == "success":
                     telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"hey {user_name}\nYour OTP is {random_6_digit_otp}")
                 else:
-                    telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="User not found0")
+                    telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"Failed to create login session for {user_name}")
         else:
-            telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="User not found1")
+            telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"User {message.get('cl_id').get('email')} not found in organization {org_name}")
     else:
-        telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="Org/User not found")
+        print(f"Org check result for {message.get('cl_id').get('org_id')}: {get_the_record}")
+        telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"Organization {message.get('cl_id').get('org_id')} not found")
     telegram_response_json =  telegram_response.to_dict()
     return telegram_response_json
 
@@ -171,7 +174,7 @@ async def fn_verify_otp(message):
                     if update_result.get("status") == "success":
                         telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"Hey {user_name}, OTP verified successfully!")
                     else:
-                        telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="Failed to update login status")
+                        telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"Failed to update login status for {user_name}")
                 else:
                     telegram_response = await bot.send_message(
                         chat_id=message.get("chat_id"), 
@@ -179,10 +182,10 @@ async def fn_verify_otp(message):
                         reply_markup=get_failure_keyboard("invalid_otp")
                     )
             else:
-                telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="No OTP found for this user")
+                telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"No active OTP session found for {user_name}")
         else:
-            telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="User not found3")
+            telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"User {message.get('cl_id').get('email')} not found in organization {org_name}")
     else:
-        telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text="Org/User not found")
+        telegram_response = await bot.send_message(chat_id=message.get("chat_id"), text=f"Organization {message.get('cl_id').get('org_id')} not found")
     telegram_response_json =  telegram_response.to_dict()
     return telegram_response_json
