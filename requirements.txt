@@ -1,5 +1,14 @@
-fastapi==0.95.2
+fastapi>=0.109.0
 uvicorn[standard]==0.22.0
 asyncpg>=0.30.0
-python-dotenv==0.21.0
+python-dotenv==1.0.0
+pydantic>=2.10.0
+jsonwebtoken==1.0.0
+bcrypt==5.0.0
+# Google
 firebase_admin==6.3.0
+google-api-python-client==2.108.0
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==1.1.0
+# Telegram
+python-telegram-bot==20.6

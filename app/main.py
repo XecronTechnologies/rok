@@ -1,26 +1,46 @@
 import asyncpg
-from fastapi import FastAPI, HTTPException
+import io
+import httpx
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Body
+from pydantic import BaseModel
 from typing import Dict, Any, Optional
-import os,json
-import firebase_admin
-from firebase_admin import credentials, firestore
+import os, json
 
-from app.db import  fetch_users
+from app.db import fetch_users
 from app.platforms.route import fn_route
+from app.platforms.google.gdrive import upload_file_to_drive
+from app.platforms.telegram.telegram_logics import fn_send_message
+from telegram import Bot
+
+# Telegram
+BOT_TOKEN = "8538090434:AAHgFqEHcuC63azYjFUrDsc-rlYtGkOL5P4"
+WEBHOOK_URL = "https://play.svix.com/in/e_Gy5mosnS2bfD8ZQLaiUZJKkYkY9/"
+bot = Bot(token=BOT_TOKEN)
 
 app = FastAPI()
+
+@app.post("/login")
+async def login(message: dict = Body(...)):
+    try:
+        record = await fn_route(message)
+        return record
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/signup")
+async def signup(message: dict = Body(...)):
+    try:
+        record = await fn_route(message)
+        return record
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @app.get("/")
 async def root():
     return {"message": "FastAPI + Neon ready"}
 
-# @app.get("/users")
-# async def list_users():
-#     try:
-#         users = await fetch_users()
-#         return users
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/rok_db")
 async def fn_rok_db(input_map: dict):
@@ -30,47 +50,75 @@ async def fn_rok_db(input_map: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# @app.get("/get_access_token")
-# async def get_access_token(input_map: Optional[dict]):
-#     try:
-#         record = await fn_route(input_map)
-#         return record
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
-# @app.post("/users")
-# async def add_user(user_data: Dict[str, Any]):
-#     try:
-#         # Basic validation
-#         if not user_data.get("name") or not user_data.get("email"):
-#             raise HTTPException(status_code=400, detail="Name and email are required")
+@app.post("/upload-to-drive")
+async def upload_to_drive(
+    file: UploadFile = File(...),
+    folder_id: Optional[str] = Form(None)
+):
+    try:
+        content = await file.read()
+        result = await upload_file_to_drive(
+            file_content=content,
+            filename=file.filename,
+            mimetype=file.content_type or 'application/octet-stream',
+            folder_id=folder_id
+        )
         
-#         name = user_data["name"]
-#         email = user_data["email"]
+        if result.get('success'):
+            return result
+        else:
+            raise HTTPException(status_code=500, detail=result.get('error'))
         
-#         user = await fn_add_record({"name":name,"email":email})
-#         return user
-#     except asyncpg.exceptions.UniqueViolationError:
-#         raise HTTPException(status_code=400, detail="Email already exists")
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Upload failed: {str(e)}"
+        )
 
 
-
-# @app.get("/firebase/{collection_name}/{document_id}")
-# async def get_document(collection_name: str, document_id: str):
-#     cred = credentials.Certificate(os.path.join(os.path.dirname(__file__), "service_account.json"))
-#     firebase_admin.initialize_app(cred)
-#     db = firestore.client()
-#     if not db:
-#         raise HTTPException(status_code=503, detail="Firebase not configured or initialized")
-#     try:
-#         doc_ref = db.collection(collection_name).document(document_id)
-#         doc = doc_ref.get()
-#         temp =  json.loads(json.dumps({"as":doc.to_dict()}))
-#         temp["id"] = doc.to_dict().get("id")
-#         return temp
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-# 6
+@app.post("/telegram-callback")
+async def telegram_callback(update: dict = Body(...)):
+    """Handle Telegram callback queries (button clicks)"""
+    try:
+        callback_query = update.get("callback_query")
+        if not callback_query:
+            return {"status": "no callback query"}
+        
+        callback_data = callback_query.get("data", "")
+        chat_id = callback_query.get("message", {}).get("chat", {}).get("id")
+        callback_id = callback_query.get("id")
+        user = callback_query.get("from", {})
+        
+        # Send the callback data to the webhook
+        if callback_data.startswith("report_"):
+            error_type = callback_data.replace("report_", "")
+            webhook_payload = {
+                "error_type": error_type,
+                "user_id": user.get("id"),
+                "username": user.get("username"),
+                "first_name": user.get("first_name"),
+                "chat_id": chat_id,
+                "callback_data": callback_data,
+                "message": callback_query.get("message", {}).get("text", "")
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(WEBHOOK_URL, json=webhook_payload)
+            
+            # Acknowledge the callback and send a response message
+            await bot.answer_callback_query(callback_id, text="Issue reported successfully!")
+            await bot.send_message(chat_id=chat_id, text="Thank you! Your issue has been reported.")
+            
+            return {"status": "reported", "webhook_response": response.status_code}
+        
+        elif callback_data.startswith("retry_"):
+            await bot.answer_callback_query(callback_id, text="Please try again")
+            return {"status": "retry acknowledged"}
+        
+        return {"status": "unknown callback"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
