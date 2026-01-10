@@ -1,6 +1,8 @@
+import os
 import json
 import random
 import bcrypt
+from dotenv import load_dotenv
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from pydantic import BaseModel
 from app.utils.time_handler import unix_time_handler
@@ -8,9 +10,10 @@ from app.utils.id_generator import org_id_generator
 from app.utils.db_pool import get_pool
 from app.platforms.neon.neon_db_logics import fn_get_record,fn_filter_record,fn_add_record,fn_filtered_update_record,fn_create_schema
 
+load_dotenv()
 
-BOT_TOKEN = "8538090434:AAHgFqEHcuC63azYjFUrDsc-rlYtGkOL5P4"
-WEBHOOK_URL = "https://play.svix.com/in/e_Gy5mosnS2bfD8ZQLaiUZJKkYkY9/"
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_URL = os.getenv("TELEGRAM_WEBHOOK_URL")
 bot = Bot(token=BOT_TOKEN)
 
 def get_failure_keyboard(error_type: str):

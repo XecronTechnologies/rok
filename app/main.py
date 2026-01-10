@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Body
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import os, json
+from dotenv import load_dotenv
 
 from app.db import fetch_users
 from app.platforms.route import fn_route
@@ -12,9 +13,11 @@ from app.platforms.google.gdrive import upload_file_to_drive
 from app.platforms.telegram.telegram_logics import fn_send_message
 from telegram import Bot
 
+load_dotenv()
+
 # Telegram
-BOT_TOKEN = "8538090434:AAHgFqEHcuC63azYjFUrDsc-rlYtGkOL5P4"
-WEBHOOK_URL = "https://play.svix.com/in/e_Gy5mosnS2bfD8ZQLaiUZJKkYkY9/"
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_URL = os.getenv("TELEGRAM_WEBHOOK_URL")
 bot = Bot(token=BOT_TOKEN)
 
 app = FastAPI()

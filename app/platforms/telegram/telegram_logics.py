@@ -1,10 +1,13 @@
+import os
+from dotenv import load_dotenv
 from telegram import Bot
 from pydantic import BaseModel
 from app.utils.db_pool import get_pool
 from app.platforms.neon.neon_db_logics import fn_get_record
 
+load_dotenv()
 
-BOT_TOKEN = "8538090434:AAHgFqEHcuC63azYjFUrDsc-rlYtGkOL5P4"
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = Bot(token=BOT_TOKEN)
 
 # class Message(BaseModel):
