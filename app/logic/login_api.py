@@ -61,20 +61,22 @@ async def fn_send_otp(message):
 
     get_the_record = await fn_filter_record(pool,message)
 
-    if(get_the_record[0].get('org_id') and get_the_record[0].get('org_name')):
+    if get_the_record and get_the_record[0].get('org_id') and get_the_record[0].get('org_name'):
         # Check the user is valid
-        message["parameters"]["table_name"] = "user_master"
-        message["parameters"]["schema_name"] = get_the_record[0].get('org_name')
-        message["parameters"]["column_names"]=["user_id","user_name"]
-        message["parameters"]["filter_query"] = f"email = '{message.get('cl_id').get('email')}'"
         org_name = get_the_record[0].get('org_name')
         org_id = get_the_record[0].get('org_id')
-        get_the_record = await fn_filter_record(pool,message)
+        
+        message["parameters"]["table_name"] = "user_master"
+        message["parameters"]["schema_name"] = org_name
+        message["parameters"]["column_names"]=["user_id","user_name"]
+        message["parameters"]["filter_query"] = f"email = '{message.get('cl_id').get('email')}'"
+        
+        get_the_user = await fn_filter_record(pool,message)
         # Send OTP
-        if(get_the_record[0].get('user_id')):
+        if get_the_user and get_the_user[0].get('user_id'):
             random_6_digit_otp = str(random.randint(100000, 999999))
-            user_id = get_the_record[0].get('user_id')
-            user_name = get_the_record[0].get('user_name')
+            user_id = get_the_user[0].get('user_id')
+            user_name = get_the_user[0].get('user_name')
             
             # Check if a login record already exists for this user
             message["parameters"]["table_name"] = "login_master"
@@ -133,18 +135,20 @@ async def fn_verify_otp(message):
 
     get_the_record = await fn_filter_record(pool,message)
 
-    if(get_the_record[0].get('org_id') and get_the_record[0].get('org_name')):
+    if get_the_record and get_the_record[0].get('org_id') and get_the_record[0].get('org_name'):
         # Check the user is valid
+        org_name = get_the_record[0].get('org_name')
+        
         message["parameters"]["table_name"] = "user_master"
-        message["parameters"]["schema_name"] = get_the_record[0].get('org_name')
+        message["parameters"]["schema_name"] = org_name
         message["parameters"]["column_names"]=["user_id","user_name"]
         message["parameters"]["filter_query"] = f"email = '{message.get('cl_id').get('email')}'"
-        org_name = get_the_record[0].get('org_name')
-        get_the_record = await fn_filter_record(pool,message)
+        
+        get_the_user = await fn_filter_record(pool,message)
         # Send OTP
-        if(get_the_record[0].get('user_id')):
-            user_id = get_the_record[0].get('user_id')
-            user_name = get_the_record[0].get('user_name')
+        if get_the_user and get_the_user[0].get('user_id'):
+            user_id = get_the_user[0].get('user_id')
+            user_name = get_the_user[0].get('user_name')
             message["parameters"]["table_name"] = "login_master"
             message["parameters"]["schema_name"] = org_name
             message["parameters"]["column_names"] = ["otp_config", "record_id"]

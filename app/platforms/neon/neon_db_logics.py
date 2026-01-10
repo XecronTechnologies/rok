@@ -41,12 +41,14 @@ async def fn_filter_record(pool,input_map:Optional[dict]):
                 rows = await conn.fetch(query)
                 if rows:
                     return [dict(row) for row in rows]
-                return [{"message": "fail"}]
+                return []
         else:
-            return {"message":"No filter query provided"}
+            print("No filter query provided")
+            return []
 
     except Exception as e:
-        return {"message":str(e)}
+        print(f"Error in fn_filter_record: {str(e)}")
+        return []
 
 # add record
 async def fn_add_record(pool, input_map: Optional[dict]):
@@ -71,7 +73,8 @@ async def fn_add_record(pool, input_map: Optional[dict]):
             row = await conn.fetchrow(query)
             return {"status":"success","data":dict(row)}
     except Exception as e:
-        return {"message1":str(e)}
+        print(f"Error in fn_add_record: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 # Bulk add records
 async def fn_bulk_add_record(pool, input_map: Optional[dict]):
@@ -104,7 +107,8 @@ async def fn_bulk_add_record(pool, input_map: Optional[dict]):
             rows = await conn.fetch(query)
             return {"status": "success", "data": [dict(row) for row in rows]}
     except Exception as e:
-        return {"message1": str(e)}
+        print(f"Error in fn_bulk_add_record: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 # Update Record
@@ -136,7 +140,8 @@ async def fn_update_record(pool,input_map:Optional[dict]):
             else:
                 return {"status": "failure", "message": "Record not found"}
     except Exception as e:
-        return {"message": str(e)}
+        print(f"Error in fn_update_record: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 # Update Record by Filtered query
 async def fn_filtered_update_record(pool,input_map:Optional[dict]):
@@ -168,7 +173,8 @@ async def fn_filtered_update_record(pool,input_map:Optional[dict]):
             else:
                 return {"status": "failure", "message": "Record not found"}
     except Exception as e:
-        return {"message": str(e)}
+        print(f"Error in fn_filtered_update_record: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 # Schema Logics
